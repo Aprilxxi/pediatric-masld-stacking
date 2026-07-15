@@ -1,0 +1,44 @@
+# Patient-level and derived tabular data
+*.csv
+*.tsv
+*.xls
+*.xlsx
+*.parquet
+*.feather
+data/
+
+# Trained models and serialized preprocessing objects
+*.pkl
+*.pickle
+*.joblib
+*.npy
+*.npz
+*.h5
+*.hdf5
+models/
+NAFLD_allmodel/
+NAFLD_bestmodel/
+
+# Analysis outputs and manuscript files
+outputs/
+results/
+*.log
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+*.pdf
+*.doc
+*.docx
+
+# Python/editor environment
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+.idea/
+.vscode/
+
