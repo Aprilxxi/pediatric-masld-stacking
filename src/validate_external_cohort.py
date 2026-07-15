@@ -1,6 +1,7 @@
 # %%
 # 原始数据
 import time
+from pathlib import Path
 import pandas as pd
 import numpy as np  # noqa: F401
 import matplotlib.pyplot as plt  # noqa: F401
@@ -37,6 +38,12 @@ from sklearn.impute import KNNImputer  # noqa: F401
 from bootstrap_metrics import write_metric_workbook_with_bootstrap
 
 warnings.filterwarnings("ignore")
+
+PROJECT_DIR = Path(__file__).resolve().parents[1]
+BASE_DIR = Path(os.environ.get("MASLD_BASE_DIR", PROJECT_DIR))
+ALL_MODEL_DIR = BASE_DIR / "NAFLD_allmodel"
+OUTPUT_DIR = Path(os.environ.get("MASLD_OUTPUT_DIR", PROJECT_DIR / "outputs"))
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 # %%
 t_start = time.time()
 BOOTSTRAP_REPLICATES = 2000
@@ -72,7 +79,7 @@ def roc_auc(y_test, y_pred_proba, modle_name):
     return roc_auc
 
 
-df_verification = pd.read_excel("obesity_NAFLD-外部验证353-0816插值.xlsx")
+df_verification = pd.read_excel(BASE_DIR / "obesity_NAFLD-外部验证353-0816插值.xlsx")
 
 
 veri = df_verification.copy()
@@ -137,7 +144,7 @@ def stacking_predict(
     for i in range(len(model_name)):
         for j in range(k_splits):
 
-            pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_allmodel"
+            pkl_path = ALL_MODEL_DIR
             clf_name = model_name[i] + str(j) + ".pkl"
             current_clf = joblib.load(os.path.join(pkl_path, clf_name))
             if (
@@ -202,7 +209,7 @@ def stacking_predict(
 
 # %%
 model_name = "CatBoostClassifier"
-pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_allmodel"
+pkl_path = ALL_MODEL_DIR
 y_pred_probacat = []
 for i in range(k_splits):
 
@@ -247,24 +254,27 @@ for i in range(k_splits):
     )
 y_pred_probacat = np.array(y_pred_probacat)
 stacking_probability_by_model = y_pred_probacat.reshape(k_splits, len(y_veri))
-# One external-validation probability per patient is obtained with the median
+# One external-validation probability per patient is obtained with the mean
 # across the 10 fold-specific models. The same patient-level probabilities are
 # used for both the point estimates and the bootstrap confidence intervals.
-stacking_median_probability = np.median(stacking_probability_by_model, axis=0)
-base_median_probability = np.median(base_fold_proba, axis=1).T
+stacking_mean_probability = np.mean(stacking_probability_by_model, axis=0)
+base_mean_probability = np.mean(base_fold_proba, axis=1).T
 external_probability_matrix = np.column_stack(
-    [base_median_probability, stacking_median_probability]
+    [base_mean_probability, stacking_mean_probability]
 )
 external_prediction_matrix = (external_probability_matrix >= 0.5).astype(int)
-df_proba = pd.read_excel('pop_9.1.xlsx')
-df_proba ['stacking(catboost)'] = y_pred_probacat 
-length = 353
-model_fold_list = []
-for i in range(10):
-    model_fold_list  = model_fold_list + [i+1 for _ in range(length)]
-df_proba ['Model_n'] = model_fold_list 
+df_proba = pd.read_excel(BASE_DIR / "pop_9.1.xlsx")
+expected_rows = stacking_probability_by_model.size
+if len(df_proba) != expected_rows:
+    raise ValueError(
+        f"Expected {expected_rows} rows in pop_9.1.xlsx, found {len(df_proba)}"
+    )
+df_proba["stacking(catboost)"] = stacking_probability_by_model.reshape(-1)
+df_proba["Model_n"] = np.repeat(
+    np.arange(1, k_splits + 1), len(y_veri)
+)
 
-with pd.ExcelWriter("外部验证模型预测概率_9.1.xlsx") as writer:
+with pd.ExcelWriter(OUTPUT_DIR / "外部验证模型预测概率_9.1.xlsx") as writer:
     df_proba.to_excel(writer,  index=False)
 # %%
 index_1 = [
@@ -294,7 +304,7 @@ write_metric_workbook_with_bootstrap(
     y_veri,
     external_prediction_matrix,
     external_probability_matrix,
-    "external_validation_results_median_bootstrap_ci.xlsx",
+    OUTPUT_DIR / "external_validation_results_mean_bootstrap_ci.xlsx",
     n_folds=k_splits,
     n_bootstrap=BOOTSTRAP_REPLICATES,
     seed=BOOTSTRAP_RANDOM_STATE,
@@ -302,10 +312,10 @@ write_metric_workbook_with_bootstrap(
 
 patient_prediction_table = pd.DataFrame(
     external_probability_matrix,
-    columns=[f"{label}_median_probability" for label in index_1],
+    columns=[f"{label}_mean_probability" for label in index_1],
 )
 patient_prediction_table.insert(0, "outcome", np.asarray(y_veri, dtype=int))
 patient_prediction_table.to_excel(
-    "external_validation_patient_level_median_probabilities.xlsx",
+    OUTPUT_DIR / "external_validation_patient_level_mean_probabilities.xlsx",
     index=False,
 )
