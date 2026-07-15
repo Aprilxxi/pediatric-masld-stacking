@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 import joblib
@@ -49,7 +50,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--base-dir",
         type=Path,
-        default=Path(r"D:\Python code\mechine_learning_stroke"),
+        default=Path(os.environ.get("MASLD_BASE_DIR", Path(__file__).resolve().parents[1])),
     )
     parser.add_argument(
         "--internal-data-file",
