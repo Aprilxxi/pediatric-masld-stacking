@@ -1,6 +1,7 @@
 # %%
 # 原始数据
 import time
+from pathlib import Path
 import pandas as pd
 import numpy as np  # noqa: F401
 import matplotlib.pyplot as plt  
@@ -44,6 +45,13 @@ from bootstrap_metrics import (
 
 
 warnings.filterwarnings("ignore")
+
+PROJECT_DIR = Path(__file__).resolve().parents[1]
+BASE_DIR = Path(os.environ.get("MASLD_BASE_DIR", PROJECT_DIR))
+ALL_MODEL_DIR = BASE_DIR / "NAFLD_allmodel"
+BEST_MODEL_DIR = BASE_DIR / "NAFLD_bestmodel"
+ALL_MODEL_DIR.mkdir(parents=True, exist_ok=True)
+BEST_MODEL_DIR.mkdir(parents=True, exist_ok=True)
 # %%
 t_start = time.time()
 BOOTSTRAP_REPLICATES = 2000
@@ -139,12 +147,12 @@ def train_base(
             best_clf = clf  # noqa: F841
             score = model_auc[model_n, i]
             best_f = i
-        pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_allmodel"
+        pkl_path = ALL_MODEL_DIR
         clf_name = model_name + str(i) + ".pkl"
         i += 1
         joblib.dump(clf, os.path.join(pkl_path, clf_name))
         # print(classification_report(y_pre[test_index, model_n], y_test))
-    bpkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_bestmodel"
+    bpkl_path = BEST_MODEL_DIR
     best_name = model_name + ".pkl"
     best_fold.append(best_f)
     joblib.dump(best_clf, os.path.join(bpkl_path, best_name))
@@ -154,9 +162,9 @@ def train_base(
 
 
 # %%
-df = pd.read_excel("obesity-5936-0716.xlsx")
-df_1555 = pd.read_excel("obesity-1555-0815.xlsx")
-df_verification = pd.read_excel("External verification-354-0815.xlsx")
+df = pd.read_excel(BASE_DIR / "obesity-5936-0716.xlsx")
+df_1555 = pd.read_excel(BASE_DIR / "obesity-1555-0815.xlsx")
+df_verification = pd.read_excel(BASE_DIR / "External verification-354-0815.xlsx")
 
 df_1555 = df_1555.drop(columns="ID")
 df_verification = df_verification.drop(columns="ID")
@@ -224,7 +232,7 @@ X["gender"] = X["gender"].astype(int)
 scaler = StandardScaler()
 scaler.fit(X)
 X_std = np.array(X)
-joblib.dump(scaler, os.path.join('D:/Python code/mechine_learning_stroke/NAFLD_allmodel', 'scaler.pkl' ))
+joblib.dump(scaler, ALL_MODEL_DIR / "scaler.pkl")
 X_std = np.insert(scaler.fit_transform(X_std[:, 1:]), 0, X_std[:, 0], axis=1)
 
 imputer = KNNImputer(n_neighbors=80)
@@ -492,7 +500,7 @@ for train_index, test_index in kf.split(y):
     if j == 9:
         X_train, X_test = X.loc[train_index], X.loc[test_index]
         y_train, y_test = y.loc[train_index], y.loc[test_index]
-        pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_bestmodel"
+        pkl_path = BEST_MODEL_DIR
         clf_name = model_name + ".pkl"
         current_clf = joblib.load(os.path.join(pkl_path, clf_name))
         background = shap.utils.sample(X_train, min(100, len(X_train)), random_state=0)
@@ -558,7 +566,7 @@ lgbm_clf = LGBMClassifier(
     feature_fraction=0.6,
     learning_rate=0.005,
     max_depth=5,
-    num_leaves=2 ^ 4, # 2 ^max_depth-1
+    num_leaves=6,
     subsample=0.8,
     verbosity=-1,
     n_estimators=800,
@@ -590,7 +598,7 @@ j = 0
 for train_index, test_index in kf.split(y):
     if j == 1:
         X_train, X_test = X.loc[train_index], X.loc[test_index]
-        pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_bestmodel"
+        pkl_path = BEST_MODEL_DIR
         clf_name = model_name + ".pkl"
         current_clf = joblib.load(os.path.join(pkl_path, clf_name))
         masker = shap.maskers.Independent(X_train)
@@ -639,7 +647,7 @@ j = 0
 for train_index, test_index in kf.split(y):
     if j == 1:
         X_train, X_test = X.loc[train_index], X.loc[test_index]
-        pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_bestmodel"
+        pkl_path = BEST_MODEL_DIR
         clf_name = model_name + ".pkl"
         current_clf = joblib.load(os.path.join(pkl_path, clf_name))
         masker = shap.maskers.Independent(data=X_train)
@@ -792,11 +800,11 @@ for train_index, test_index in kf.split(y):
     if model_auc[model_n, i] > score:
         best_clf = catclf
         score = model_auc[model_n, i]
-    pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_allmodel"
+    pkl_path = ALL_MODEL_DIR
     clf_name = model_name + str(i) + ".pkl"
     i += 1
     joblib.dump(catclf, os.path.join(pkl_path, clf_name))
-bpkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_bestmodel"
+bpkl_path = BEST_MODEL_DIR
 best_name = model_name + ".pkl"
 joblib.dump(best_clf, os.path.join(bpkl_path, best_name))
 
@@ -865,7 +873,7 @@ plt.show()
 col_feature = np.array(X.columns)
 # %%
 
-pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_bestmodel"
+pkl_path = BEST_MODEL_DIR
 clf_name = "AdaBoostClassifier.pkl"
 clf = joblib.load(os.path.join(pkl_path, clf_name))
 
@@ -882,7 +890,7 @@ j = 0
 for train_index, test_index in kf.split(y):
     if j == 1:
         X_train, X_test = X.loc[train_index], X.loc[test_index]
-        pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_bestmodel"
+        pkl_path = BEST_MODEL_DIR
         clf_name = model_name + ".pkl"
         current_clf = joblib.load(os.path.join(pkl_path, clf_name))
         background = shap.utils.sample(X_train, min(100, len(X_train)), random_state=0)
@@ -945,7 +953,7 @@ j = 0
 for train_index, test_index in kf.split(y):
     if j == 1:
         X_train, X_test = X.loc[train_index], X.loc[test_index]
-        pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_bestmodel"
+        pkl_path = BEST_MODEL_DIR
         clf_name = model_name + ".pkl"
         current_clf = joblib.load(os.path.join(pkl_path, clf_name))
         background = shap.utils.sample(X_train, min(100, len(X_train)), random_state=0)
@@ -1007,7 +1015,7 @@ j = 0
 for train_index, test_index in kf.split(y):
     if j == 1:
         X_train, X_test = X.loc[train_index], X.loc[test_index]
-        pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_bestmodel"
+        pkl_path = BEST_MODEL_DIR
         clf_name = model_name + ".pkl"
         current_clf = joblib.load(os.path.join(pkl_path, clf_name))
         explainer = shap.TreeExplainer(current_clf)
@@ -1028,7 +1036,7 @@ j = 0
 for train_index, test_index in kf.split(y):
     if j == 1:
         X_train, X_test = X.loc[train_index], X.loc[test_index]
-        pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_bestmodel"
+        pkl_path = BEST_MODEL_DIR
         clf_name = model_name + ".pkl"
         current_clf = joblib.load(os.path.join(pkl_path, clf_name))
         explainer = shap.TreeExplainer(current_clf)
@@ -1049,7 +1057,7 @@ j = 0
 for train_index, test_index in kf.split(y):
     if j == 1:
         X_train, X_test = X.loc[train_index], X.loc[test_index]
-        pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_bestmodel"
+        pkl_path = BEST_MODEL_DIR
         clf_name = model_name + ".pkl"
         current_clf = joblib.load(os.path.join(pkl_path, clf_name))
         masker = shap.maskers.Independent(X_train)
@@ -1121,7 +1129,7 @@ j = 0
 for train_index, test_index in kf.split(y):
     if j == 1:
         X_train, X_test = X.loc[train_index], X.loc[test_index]
-        pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_bestmodel"
+        pkl_path = BEST_MODEL_DIR
         clf_name = model_name + ".pkl"
         current_clf = joblib.load(os.path.join(pkl_path, clf_name))
         masker = shap.maskers.Independent(data=X_train)
@@ -1156,7 +1164,7 @@ for model_name in model_name_all:
     for train_index, test_index in kf.split(y):
         if j == 9:
             X_train, X_test = X_std[train_index], X_std[test_index]
-            pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_bestmodel"
+            pkl_path = BEST_MODEL_DIR
             clf_name = model_name + ".pkl"
             current_clf = joblib.load(os.path.join(pkl_path, clf_name))
             explainer = shap.Explainer(current_clf.predict, X_train)
@@ -1192,7 +1200,7 @@ def stacking_predict(X_verify, y_verify, meta_clf, k_splits, X_verify_std):
     for i in range(len(model_name)):
         for j in range(k_splits):
 
-            pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_allmodel"
+            pkl_path = ALL_MODEL_DIR
             clf_name = model_name[i] + str(j) + ".pkl"
             current_clf = joblib.load(os.path.join(pkl_path, clf_name))
             if (
@@ -1237,7 +1245,7 @@ def stacking_predict(X_verify, y_verify, meta_clf, k_splits, X_verify_std):
 
 
 # %%
-pkl_path = "D:/Python code/mechine_learning_stroke/NAFLD_bestmodel"
+pkl_path = BEST_MODEL_DIR
 clf_name = "CatBoostClassifier.pkl"
 meta_clf = joblib.load(os.path.join(pkl_path, clf_name))
 
