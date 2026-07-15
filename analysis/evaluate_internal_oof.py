@@ -1,4 +1,4 @@
-"""Post-hoc internal validation analyses for the pediatric MASLD models.
+"""Internal validation analyses for the pediatric MASLD models.
 
 This script reconstructs patient-level out-of-fold (OOF) predictions from the
 10 fold-specific models saved by ``train_stacking_model.py``. It then performs:
