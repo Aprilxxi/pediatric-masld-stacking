@@ -1,6 +1,6 @@
-"""Final AUC comparison and raw-probability calibration analysis.
+"""AUC comparison and raw-probability calibration analysis.
 
-This script supersedes the earlier post-hoc validation scripts. It:
+This script:
 
 1. reconstructs one internal out-of-fold (OOF) prediction per patient;
 2. compares Stacking with AdaBoost internally using paired DeLong inference;
@@ -367,49 +367,6 @@ def stacking_delong_table(
     return result
 
 
-def fmt(value: float, digits: int = 3) -> str:
-    return f"{value:.{digits}f}"
-
-
-def fmt_p(value: float) -> str:
-    return "<0.001" if value < 0.001 else f"{value:.3f}"
-
-
-def reviewer_response(
-    internal: dict[str, float],
-    external: dict[str, float],
-    calibration_rows: dict[str, dict[str, float | int | str]],
-) -> str:
-    internal_cal = calibration_rows["Internal OOF"]
-    external_cal = calibration_rows["External validation"]
-    return f"""# Response to reviewer: AUC comparison and calibration
-
-## Comment 6
-
-**Reviewer comment:** The stacking model only marginally outperformed AdaBoost (AUC 0.877 vs 0.874). Statistical comparison of AUCs should be performed to demonstrate meaningful improvement.
-
-**Response:** Thank you for this important comment. We performed a paired DeLong comparison using one out-of-fold prediction per participant, thereby accounting for the correlation between predictions generated for the same individuals. The stacking model had an AUC of {fmt(internal['auc_stacking'])}, compared with {fmt(internal['auc_comparator'])} for AdaBoost. The absolute AUC difference was {fmt(internal['auc_difference'])} (95% CI, {fmt(internal['difference_ci_lower'])} to {fmt(internal['difference_ci_upper'])}; P={fmt_p(internal['p_value'])}). Although the difference was statistically detectable, its absolute magnitude was small. We therefore revised the manuscript to describe the improvement as marginal and removed statements implying a substantial or clinically meaningful superiority.
-
-As an additional external-validation comparison, the stacking model had an AUC of {fmt(external['auc_stacking'])}, compared with {fmt(external['auc_comparator'])} for random forest, the best-performing base model in the external cohort. The AUC difference was {fmt(external['auc_difference'])} (95% CI, {fmt(external['difference_ci_lower'])} to {fmt(external['difference_ci_upper'])}; P={fmt_p(external['p_value'])}). These results have been added to the revised Results section.
-
-## Comment 3
-
-**Reviewer comment:** Provide calibration metrics and calibration plots. AUC alone is insufficient for evaluating clinical prediction models.
-
-**Response:** We agree and have added calibration-in-the-large, calibration intercept, calibration slope, Brier score, and calibration plots for both internal and external validation. All analyses used the models' original, unmodified predicted probabilities; no probability recalibration was fitted or applied. In internal out-of-fold validation, the calibration-in-the-large was {fmt(float(internal_cal['calibration_in_the_large']))}, the calibration intercept was {fmt(float(internal_cal['calibration_intercept']))}, the calibration slope was {fmt(float(internal_cal['calibration_slope']))}, and the Brier score was {fmt(float(internal_cal['brier_score']))}. In external validation, the corresponding values were {fmt(float(external_cal['calibration_in_the_large']))}, {fmt(float(external_cal['calibration_intercept']))}, {fmt(float(external_cal['calibration_slope']))}, and {fmt(float(external_cal['brier_score']))}, respectively. The external results indicate systematic overprediction, which is now explicitly acknowledged in the Results and Discussion. Risk-decile calibration plots with 95% confidence intervals have been added to the revised manuscript.
-
-## Suggested Methods text
-
-Pairwise comparisons of correlated AUCs were performed using the DeLong method based on patient-level predicted probabilities. The stacking model was compared with AdaBoost in internal out-of-fold validation and with random forest, the best-performing base model, in external validation. Calibration was evaluated using the original, unmodified predicted probabilities. Calibration-in-the-large, calibration intercept, calibration slope, and Brier score were reported. Calibration plots compared the mean raw predicted probability with the observed outcome proportion across risk-decile groups; no recalibration model was fitted or applied. Ninety-five percent confidence intervals for calibration metrics were obtained using patient-level bootstrap resampling.
-
-## Suggested Results text
-
-In internal out-of-fold validation, the stacking model achieved an AUC of {fmt(internal['auc_stacking'])}, compared with {fmt(internal['auc_comparator'])} for AdaBoost (difference, {fmt(internal['auc_difference'])}; 95% CI, {fmt(internal['difference_ci_lower'])} to {fmt(internal['difference_ci_upper'])}; paired DeLong P={fmt_p(internal['p_value'])}). Thus, the stacking model showed only a marginal improvement in discrimination. In external validation, the stacking model achieved an AUC of {fmt(external['auc_stacking'])}, compared with {fmt(external['auc_comparator'])} for random forest (difference, {fmt(external['auc_difference'])}; 95% CI, {fmt(external['difference_ci_lower'])} to {fmt(external['difference_ci_upper'])}; paired DeLong P={fmt_p(external['p_value'])}).
-
-Using the original predicted probabilities, the stacking model showed good overall calibration in internal out-of-fold validation (calibration-in-the-large, {fmt(float(internal_cal['calibration_in_the_large']))}; calibration intercept, {fmt(float(internal_cal['calibration_intercept']))}; calibration slope, {fmt(float(internal_cal['calibration_slope']))}; Brier score, {fmt(float(internal_cal['brier_score']))}). In the external cohort, the calibration-in-the-large was {fmt(float(external_cal['calibration_in_the_large']))}, the calibration intercept was {fmt(float(external_cal['calibration_intercept']))}, the calibration slope was {fmt(float(external_cal['calibration_slope']))}, and the Brier score was {fmt(float(external_cal['brier_score']))}. The negative calibration-in-the-large and calibration intercept indicated that the model systematically overestimated absolute risk in the external cohort despite retaining good discrimination.
-"""
-
-
 def main() -> None:
     args = parse_args()
     base_dir = args.base_dir.resolve()
@@ -513,16 +470,6 @@ def main() -> None:
             },
         }
     ).to_csv(output_dir / "external_patient_predictions.csv", index=False)
-
-    response = reviewer_response(
-        internal_delong,
-        external_rf,
-        metrics_by_cohort,
-    )
-    (output_dir / "reviewer_response_auc_calibration.md").write_text(
-        response,
-        encoding="utf-8",
-    )
 
     summary = {
         "cohorts": {
