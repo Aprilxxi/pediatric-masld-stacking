@@ -46,6 +46,7 @@ The manuscript analysis used fixed hyperparameter settings coded directly in `sr
 - `src/bootstrap_metrics.py`: patient-level bootstrap confidence intervals for discrimination and classification metrics.
 - `analysis/evaluate_internal_oof.py`: reconstruction and evaluation of internal OOF probabilities, including paired DeLong analyses and calibration utilities.
 - `analysis/evaluate_auc_calibration.py`: AUC comparison and calibration analysis using unmodified predicted probabilities.
+- `analysis/complete_case_sensitivity_analysis.py`: complete-case sensitivity analysis using the same fixed model settings and 10-fold stacking workflow as the primary analysis; rows with any missing predictor or outcome are excluded.
 
 ## Running the code
 
@@ -56,6 +57,18 @@ python -m pip install -r requirements.txt
 ```
 
 Then place the restricted datasets in a local directory, set `MASLD_BASE_DIR` to that directory, and run the required analysis. If `MASLD_BASE_DIR` is not set, the scripts use the repository root. The main script is a research script rather than a packaged command-line application; the order of columns in the supplied datasets must match that used during model development.
+
+## Complete-case sensitivity analysis
+
+The complete-case sensitivity analysis changes only the missing-data strategy: participants with any missing value are excluded, while the prespecified model hyperparameters, 10-fold assignments, OOF stacking protocol, external-validation aggregation, and patient-level bootstrap procedure are retained.
+
+Run it with:
+
+```bash
+python analysis/complete_case_sensitivity_analysis.py
+```
+
+The script expects the same restricted development and external-validation workbooks used by the primary analysis. Set `MASLD_BASE_DIR` and, if desired, `MASLD_OUTPUT_DIR` as described above. Generated workbooks and participant-level predictions remain local and are not included in this repository.
 
 ## Methodological note
 
