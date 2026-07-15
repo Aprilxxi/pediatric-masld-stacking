@@ -23,7 +23,7 @@ The base learners passed to the stacker are XGBoost, support vector machine, mul
 
 ## Hyperparameters
 
-The manuscript analysis used fixed hyperparameter settings coded directly in `src/obesity_5936+1555.py`; no separate grid, random, or Bayesian hyperparameter search was run within the cross-validation loop. The principal non-default settings are summarized below.
+The manuscript analysis used fixed hyperparameter settings coded directly in `src/train_stacking_model.py`; no separate grid, random, or Bayesian hyperparameter search was run within the cross-validation loop. The principal non-default settings are summarized below.
 
 | Model | Principal fixed settings |
 |---|---|
@@ -43,12 +43,12 @@ In the original Python source, LightGBM used `num_leaves=2 ^ 4`. Because `^` is 
 
 ## Repository contents
 
-- `src/obesity_5936+1555.py`: original development, 10-fold OOF stacking, model saving, internal performance, and subsequent analyses.
-- `src/external_veri.py`: external validation using the median fold-specific probability per participant.
-- `src/bootstrap_ci_utils.py`: patient-level bootstrap confidence intervals for discrimination and classification metrics.
-- `src/run_obesity_no_shap_to_auc.py`: helper that runs the primary script through the performance/AUC stage without the later SHAP section.
-- `analysis/internal_calibration_auc_analysis.py`: reconstruction of internal OOF probabilities, paired DeLong analyses, and calibration utilities.
-- `analysis/auc_calibration_raw_probability_analysis.py`: AUC comparison and calibration analysis using unmodified predicted probabilities.
+- `src/train_stacking_model.py`: primary training script, including 10-fold OOF stacking, model saving, and internal performance evaluation.
+- `src/validate_external_cohort.py`: external validation using the median fold-specific probability per participant.
+- `src/bootstrap_metrics.py`: patient-level bootstrap confidence intervals for discrimination and classification metrics.
+- `src/run_training_to_auc.py`: helper that runs the primary training workflow through the performance/AUC stage without the later SHAP section.
+- `analysis/evaluate_internal_oof.py`: reconstruction and evaluation of internal OOF probabilities, including paired DeLong analyses and calibration utilities.
+- `analysis/evaluate_auc_calibration.py`: AUC comparison and calibration analysis using unmodified predicted probabilities.
 
 ## Running the code
 
