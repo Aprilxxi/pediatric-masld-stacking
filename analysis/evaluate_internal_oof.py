@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import math
 from pathlib import Path
 
@@ -69,7 +70,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--base-dir",
         type=Path,
-        default=Path(r"D:\Python code\mechine_learning_stroke"),
+        default=Path(os.environ.get("MASLD_BASE_DIR", Path(__file__).resolve().parents[1])),
         help="Directory containing the imputed workbook and NAFLD_allmodel.",
     )
     parser.add_argument(
